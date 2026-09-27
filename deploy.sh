@@ -49,13 +49,36 @@ echo "service  $SERVICE"
 echo "region   $REGION"
 echo
 
+# Check authentication before anything else. Without it the billing probe below
+# fails too, and reports a billing problem that may not exist: the first run of
+# this script said billing was disabled when the real state was no credentialed
+# account. Two different problems deserve two different messages.
+if ! gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null \
+     | grep -q .; then
+  cat >&2 <<'MSG'
+No authenticated gcloud account.
+
+  gcloud auth login
+
+That opens a browser, so it cannot be done from a script. Run it, then run this
+again.
+MSG
+  exit 1
+fi
+
 gcloud config set project "$PROJECT" --quiet
 
 # Fail early and legibly rather than part way through a build.
-if ! gcloud beta billing projects describe "$PROJECT" \
-     --format='value(billingEnabled)' 2>/dev/null | grep -qi true; then
-  cat >&2 <<'MSG'
-Billing is not enabled on this project, and Cloud Run requires it.
+BILLING="$(gcloud beta billing projects describe "$PROJECT" \
+           --format='value(billingEnabled)' 2>&1 || true)"
+if ! printf '%s' "$BILLING" | grep -qi '^true$'; then
+  cat >&2 <<MSG
+Cloud Run needs billing on this project, and the check did not come back true.
+
+  gcloud reported: ${BILLING:-<nothing>}
+
+Enable it here:
+  https://console.cloud.google.com/billing/linkedaccount?project=${PROJECT}
 
   https://console.cloud.google.com/billing/linkedaccount?project=gen-lang-client-0038192721
 
