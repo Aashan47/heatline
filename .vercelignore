@@ -1,0 +1,11 @@
+.venv/
+.cache/
+.pytest_cache/
+__pycache__/
+*.pyc
+tests/
+probes/
+video/
+KEY-HANDLING.md
+Dockerfile
+deploy.sh

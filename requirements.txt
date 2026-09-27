@@ -1,6 +1,8 @@
+# The deployment set. Installed size 83MB, against Vercel's 500MB Python bundle
+# limit. Both the Dockerfile and Vercel read this same file, so there is one
+# dependency list rather than two that can drift.
 google-adk==2.10.0
 thermofeel==2.3.0
 httpx==0.28.1
 fastapi==0.141.1
 uvicorn==0.54.0
-pytest==9.1.1
