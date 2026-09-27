@@ -1,0 +1,39 @@
+1
+00:00:00,000 --> 00:00:06,500
+Karachi, 27 September 2026. Air temperature peaked at 31.3 degrees. Six hours of that afternoon were over the occupational heat limit.
+
+2
+00:00:06,500 --> 00:00:12,500
+Eleven hours of tomorrow's shift for a delivery rider. One hour over the limit, seven that cannot be called.
+
+3
+00:00:12,500 --> 00:00:25,500
+Air temperature on the left, never above 31 degrees. The exposure index on the right. Eight of these eleven hours are over the limit or too close to call.
+
+4
+00:00:25,500 --> 00:00:33,000
+The limit is a range, because the workload is. NIOSH says metabolic rate estimates can be thirty percent out, so the limit spans two full degrees.
+
+5
+00:00:33,000 --> 00:00:41,500
+When the exposure lands inside that range, the honest answer is that it cannot be determined. Across 48 hours this moved ten hours out of a confident verdict.
+
+6
+00:00:41,500 --> 00:00:52,500
+This hour is in the forecast, and it declines anyway, because that is past the horizon this tool will answer for. A 409, so nothing downstream mistakes a refusal for an answer. That is a branch in the code, not a line in a prompt.
+
+7
+00:00:52,500 --> 00:01:06,000
+Put to the agent, the refusal survives the language model, in English and Urdu, and there is not a single number in it.
+
+8
+00:01:06,000 --> 00:01:13,000
+Forty nine tests, and none of them touch the network. A test that depends on today's weather cannot fail for the right reason.
+
+9
+00:01:13,000 --> 00:01:21,500
+One city, one worker group. A forecast is not a measurement on the street, the Urdu has not been checked by a translator, and it cannot know your own metabolic rate. Which is why the third answer exists.
+
+10
+00:01:21,500 --> 00:01:28,000
+The code and every source is at github.com/Aashan47/heatline. Weather data by Open-Meteo, CC BY 4.0.

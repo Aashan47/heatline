@@ -1,0 +1,65 @@
+[
+  {
+    "id": "counts",
+    "caption": "Eleven hours of tomorrow's shift for a delivery rider.",
+    "cmd": "curl -s 'http://127.0.0.1:8412/day?hours=11&from_hour=2026-09-28T08:00' | jq .counts",
+    "show": "curl -s \"$U/day?hours=11&from_hour=2026-09-28T08:00\" | jq .counts",
+    "output": "{\n  \"over\": 1,\n  \"undetermined\": 7,\n  \"under\": 3\n}",
+    "seconds": 0.02,
+    "returncode": 0
+  },
+  {
+    "id": "day",
+    "caption": "Air temperature on the left. The exposure index on the right.",
+    "cmd": "curl -s 'http://127.0.0.1:8412/day?hours=11&from_hour=2026-09-28T08:00' | jq -r '.hours[] | \"\\(.time)   air \\(.air_c)C   WBGT \\(.wbgt_c)C   \\(.verdict)\"'",
+    "show": "curl -s \"$U/day?hours=11&from_hour=2026-09-28T08:00\" | jq -r '.hours[] | \"\\(.time) \\(.air_c)C \\(.wbgt_c)C \\(.verdict)\"'",
+    "output": "2026-09-28T08:00   air 28.0C   WBGT 26.6C   under\n2026-09-28T09:00   air 29.2C   WBGT 28.0C   undetermined\n2026-09-28T10:00   air 30.0C   WBGT 28.7C   undetermined\n2026-09-28T11:00   air 30.6C   WBGT 29.4C   undetermined\n2026-09-28T12:00   air 30.8C   WBGT 29.7C   over\n2026-09-28T13:00   air 30.5C   WBGT 29.4C   undetermined\n2026-09-28T14:00   air 30.4C   WBGT 29.1C   undetermined\n2026-09-28T15:00   air 30.2C   WBGT 28.7C   undetermined\n2026-09-28T16:00   air 29.8C   WBGT 28.1C   undetermined\n2026-09-28T17:00   air 29.3C   WBGT 27.3C   under\n2026-09-28T18:00   air 28.7C   WBGT 26.2C   under",
+    "seconds": 0.02,
+    "returncode": 0
+  },
+  {
+    "id": "limit",
+    "caption": "The limit is a range, because the workload is a range.",
+    "cmd": "curl -s 'http://127.0.0.1:8412/limit' | jq '{limit_low_c, limit_high_c, metabolic_rate_w}'",
+    "show": "curl -s \"$U/limit\" | jq '{limit_low_c, limit_high_c, metabolic_rate_w}'",
+    "output": "{\n  \"limit_low_c\": 27.46,\n  \"limit_high_c\": 29.45,\n  \"metabolic_rate_w\": [\n    234.0,\n    349.0\n  ]\n}",
+    "seconds": 0.01,
+    "returncode": 0
+  },
+  {
+    "id": "undetermined",
+    "caption": "Inside that range it will not guess. margin_c is null.",
+    "cmd": "curl -s 'http://127.0.0.1:8412/assess?hour=2026-09-28T13:00' | jq '{verdict, wbgt_c, limit_c, margin_c}'",
+    "show": "curl -s \"$U/assess?hour=2026-09-28T13:00\" | jq '{verdict, wbgt_c, limit_c, margin_c}'",
+    "output": "{\n  \"verdict\": \"undetermined\",\n  \"wbgt_c\": 29.4,\n  \"limit_c\": [\n    27.5,\n    29.5\n  ],\n  \"margin_c\": null\n}",
+    "seconds": 0.01,
+    "returncode": 0
+  },
+  {
+    "id": "refuse_status",
+    "caption": "This hour is in the forecast. Watch what it does.",
+    "cmd": "curl -s -o /dev/null -w 'HTTP %{http_code}\\n' 'http://127.0.0.1:8412/assess?hour=2026-09-29T14:00' && curl -s 'http://127.0.0.1:8412/assess?hour=2026-09-29T14:00' | jq -r '.refusal, .reason'",
+    "show": "curl -s -o /dev/null -w '%{http_code}\\n' \"$U/assess?hour=2026-09-29T14:00\"\ncurl -s \"$U/assess?hour=2026-09-29T14:00\" | jq -r .reason",
+    "output": "HTTP 409\noutside_horizon\n2026-09-29T14:00 is 62 hours into the series. This tool answers only 48 hours ahead, because an hourly heat advisory further out than that is a forecast of a forecast. The cap is this tool's, not Open-Meteo's.",
+    "seconds": 0.02,
+    "returncode": 0
+  },
+  {
+    "id": "refuse_agent",
+    "caption": "The same question, put to the agent.",
+    "cmd": "curl -s 'http://127.0.0.1:8412/advise?q=What%20about%202pm%20on%2029%20September%3F&session=vid2' | jq -r '.tools_called | join(\" -> \")' && curl -s 'http://127.0.0.1:8412/advise?q=What%20about%202pm%20on%2029%20September%3F&session=vid2' | jq -r '.answer'",
+    "show": "curl -s \"$U/advise?q=What about 2pm on 29 September?\" | jq -r .answer",
+    "output": "data_status -> resolve_hour -> assess_hour\nI cannot advise you about the heat conditions at 2pm on 29 September. The data currently available only extends to 48 hours, and your request falls outside of that limit. Weather data by Open-Meteo.com, CC BY 4.0\n\n\u0645\u06cc\u06ba 29 \u0633\u062a\u0645\u0628\u0631 \u06a9\u0648 \u062f\u0648\u067e\u06c1\u0631 2 \u0628\u062c\u06d2 \u06a9\u06d2 \u06af\u0631\u0645\u06cc \u06a9\u06d2 \u062d\u0627\u0644\u0627\u062a \u06a9\u06d2 \u0628\u0627\u0631\u06d2 \u0645\u06cc\u06ba \u0622\u067e \u06a9\u0648 \u0645\u0634\u0648\u0631\u06c1 \u0646\u06c1\u06cc\u06ba \u062f\u06d2 \u0633\u06a9\u062a\u0627\u06d4 \u0641\u06cc \u0627\u0644\u062d\u0627\u0644 \u062f\u0633\u062a\u06cc\u0627\u0628 \u0688\u06cc\u0679\u0627 \u0635\u0631\u0641 48 \u06af\u06be\u0646\u0679\u06d2 \u062a\u06a9 \u06a9\u0627 \u06c1\u06d2\u060c \u0627\u0648\u0631 \u0622\u067e \u06a9\u06cc \u062f\u0631\u062e\u0648\u0627\u0633\u062a \u0627\u0633 \u062d\u062f \u0633\u06d2 \u0628\u0627\u06c1\u0631 \u06c1\u06d2\u06d4",
+    "seconds": 11.3,
+    "returncode": 0
+  },
+  {
+    "id": "tests",
+    "caption": "Forty nine tests. None of them touch the network.",
+    "cmd": "./.venv/bin/python -m pytest tests/ -q",
+    "show": "python -m pytest tests/ -q",
+    "output": ".................................................                        [100%]\n49 passed in 0.26s",
+    "seconds": 0.53,
+    "returncode": 0
+  }
+]
