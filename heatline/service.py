@@ -11,12 +11,13 @@ and the model is visibly a presentation layer rather than the source of truth.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import os
 import re
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
@@ -229,10 +230,58 @@ async def advise(
     }
 
 
+_ASSET_REF = re.compile(r"/static/([A-Za-z0-9_.\-]+)")
+
+
+def _asset_version(name: str) -> str:
+    """Eight hex characters of the file's own bytes."""
+    path = STATIC / name
+    try:
+        stamp = path.stat().st_mtime_ns
+    except OSError:
+        return ""
+    cached = _ASSET_VERSIONS.get(name)
+    if cached and cached[0] == stamp:
+        return cached[1]
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()[:8]
+    _ASSET_VERSIONS[name] = (stamp, digest)
+    return digest
+
+
+_ASSET_VERSIONS: dict[str, tuple[int, str]] = {}
+
+
+def _versioned_index() -> str:
+    """Stamp every /static reference with the referenced file's content hash.
+
+    Without this, a CDN in front of the service keeps serving the previous
+    stylesheet and script for the rest of their TTL after a deploy. That
+    happened: an edge cache held a four hour old app.js that still fired an
+    agent question on page load, so the page ran old code against a new
+    server. A content hash makes each deploy a new cache key, which fixes it
+    at the origin rather than by remembering to purge.
+
+    One regex pass, not a replace per file: a sequential replace can match
+    inside a substitution it has already made.
+    """
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+
+    def stamp(m: re.Match[str]) -> str:
+        version = _asset_version(m.group(1))
+        return m.group(0) + (f"?v={version}" if version else "")
+
+    return _ASSET_REF.sub(stamp, html)
+
+
 @app.get("/")
-def index() -> FileResponse:
+def index() -> HTMLResponse:
     """The dashboard. Reads the same endpoints anyone can curl."""
-    return FileResponse(STATIC / "index.html")
+    return HTMLResponse(
+        _versioned_index(),
+        # The page itself must never be cached, or the stamped references
+        # inside it go stale and defeat the stamping.
+        headers={"Cache-Control": "no-cache"},
+    )
 
 
 def main() -> None:
