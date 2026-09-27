@@ -10,3 +10,4 @@ video/frames/
 video/raw/
 video/voice/
 .DS_Store
+.vercel

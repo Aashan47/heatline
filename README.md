@@ -2,6 +2,12 @@
 
 **Is an outdoor worker in Karachi over the occupational heat limit right now?**
 
+### Live: https://heat.aashanjaved.com
+
+Open it on a phone. The verdict, the readings and the hour by hour view need no API key and are not
+rate limited. The agent is capped at five questions an hour per visitor, because each one spends the
+deployer's Gemini quota.
+
 On 27 September 2026, air temperature in Karachi peaked at **31.3 °C**. Nothing warns anyone about
 31 degrees. Computed properly, the occupational heat exposure that afternoon peaked at **30.4 °C
 WBGT**, which is above the NIOSH exposure limit for moderate work for **six consecutive hours**, with
@@ -54,7 +60,7 @@ So the honest answer is that it cannot be determined. Rounding it to a yes or a 
 the one piece of information nobody has. Over 48 hours of real Karachi forecast this turned **ten
 hours of false confidence into "cannot tell"**.
 
-## Run it
+## Run it yourself
 
 Needs Python 3.12 and a Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
 No Google Cloud project and no billing account are required.
