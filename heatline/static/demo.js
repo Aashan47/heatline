@@ -153,13 +153,13 @@ const BEATS = [
     },
     at: () => seen('#c-adv', /calling tools|cannot|degrees|advisory/i) },
 
-  { id: 'tools', hold: 6.4, zoom: '#chain', scale: 1.5, run: async () => {
+  { id: 'tools', hold: 7.4, zoom: '#chain', scale: 1.5, run: async () => {
       caption('The agent works',
         'It resolves which hour is meant, reads the forecast, and computes the exposure.');
     },
     at: () => seen('#chain', /assess_hour/) },
 
-  { id: 'verdict', hold: 6.4, zoom: '.readings', scale: 1.55, run: async () => {
+  { id: 'verdict', hold: 7.2, zoom: '.readings', scale: 1.55, run: async () => {
       caption('Two different numbers',
         'One is the air temperature. The other is the exposure the limit is defined on.');
     },
@@ -175,12 +175,12 @@ const BEATS = [
       return true;
     } },
 
-  { id: 'band', hold: 7.0, zoom: '#c-band', scale: 1.42, run: async () => {
+  { id: 'band', hold: 6.4, zoom: '#c-band', scale: 1.42, run: async () => {
       caption('Against the limit',
         'Blue is exposure. The amber band is the NIOSH limit, and it is a band because the workload is.');
     } },
 
-  { id: 'strip', hold: 7.0, zoom: '#c-strip', scale: 1.45, run: async () => {
+  { id: 'strip', hold: 6.2, zoom: '#c-strip', scale: 1.45, run: async () => {
       caption('It says when it cannot tell',
         'Inside the band, whether this rider is over depends on how hard they are working.');
       // The second agent answer takes 7 to 20 seconds. Asking for it here, two
@@ -214,7 +214,7 @@ const BEATS = [
     },
     at: () => seen('#adv-ur-t', /\S/) },
 
-  { id: 'close', hold: 5.6, run: async () => {
+  { id: 'close', hold: 5.2, run: async () => {
       camera(null);
       $('cur').classList.remove('on');
       slate('slate-close', true);
