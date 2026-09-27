@@ -14,6 +14,10 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
@@ -23,8 +27,87 @@ RAW = HERE / "raw"
 OUT = HERE / "heatline-demo.mp4"
 NARRATION = HERE / "narration.json"
 
-URL = "http://127.0.0.1:8412/?demo=1"
+BASE = "http://127.0.0.1:8412"
+URL = f"{BASE}/?demo=1"
 W, H = 1920, 1080
+
+# Both questions the scene asks. They are warmed before the camera rolls so
+# that the answers are in the service's cache when the scene asks for them.
+#
+# This is why: the last take was recorded against a rate limited agent. The
+# tool chain never appeared, so the caption "the agent works, it resolves the
+# hour, reads the forecast" played for twenty seconds over a quota notice,
+# and the two waits left ten and nine seconds of dead air that the narration
+# then had to be squeezed around. Warming first means the spinner on camera is
+# short because the answer is already paid for, and the pre flight below fails
+# the run rather than filming that again.
+QUESTIONS = [
+    "Can I work at 1pm on 28 September?",
+    "What about 2pm on 29 September?",
+]
+
+# Phrases that mean the agent did not answer. If any of these is on screen at
+# the end, the take is not usable however good it looks.
+NOT_AN_ANSWER = (
+    "spends the deployer's Gemini quota",
+    "used this hour's agent questions",
+    "temporarily unavailable",
+    "could not be reached",
+)
+
+
+def warm(question: str, attempts: int = 6) -> None:
+    """Ask once, off camera, until the model answers.
+
+    The free tier allows a few requests a minute and one agent answer spends
+    several, so a 429 here is ordinary. Waiting through it costs nothing except
+    time; filming through it cost a whole take.
+    """
+    url = f"{BASE}/advise?q=" + urllib.parse.quote(question)
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(url, timeout=180) as r:
+                body = json.loads(r.read())
+            if body.get("answer"):
+                print(f"  warmed{' from cache' if body.get('cached') else ''}: "
+                      f"{question}")
+                return
+            raise SystemExit(f"the agent returned an empty answer for: {question}")
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", "replace")[:200]
+            # A missing key is not going to clear on its own. Retrying it spent
+            # five minutes saying so.
+            if "API key" in detail:
+                raise SystemExit(
+                    "the service has no Gemini API key, so the agent cannot "
+                    "answer and nothing was recorded. Start it with the key in "
+                    "its environment."
+                ) from None
+            wait = int(exc.headers.get("Retry-After") or 0) or 20 * attempt
+            if attempt == attempts:
+                raise SystemExit(
+                    f"the agent would not answer {question!r} after {attempts} "
+                    f"tries. Last response was HTTP {exc.code}: {detail}\n"
+                    "Recording now would film a quota notice, so nothing was "
+                    "recorded. Raise HEATLINE_ADVISE_LIMIT for the recording "
+                    "service, or wait for the model quota to reset."
+                ) from None
+            print(f"  HTTP {exc.code}, waiting {wait}s ({attempt}/{attempts})",
+                  flush=True)
+            time.sleep(wait)
+
+
+def preflight() -> None:
+    try:
+        with urllib.request.urlopen(f"{BASE}/health", timeout=10) as r:
+            r.read()
+    except OSError as exc:
+        raise SystemExit(
+            f"nothing is serving {BASE}: {exc}. Start the service first."
+        ) from None
+    print("warming the agent, off camera")
+    for question in QUESTIONS:
+        warm(question)
 
 
 def record() -> Path:
@@ -60,6 +143,18 @@ def record() -> Path:
         page.evaluate("window.__demoPlay()")
         page.wait_for_function("window.__demoDone === true",
                                timeout=int((total + 90) * 1000))
+        scene_error = page.evaluate("window.__demoError || null")
+        if scene_error:
+            context.close()
+            browser.close()
+            raise SystemExit(f"the scene stopped: {scene_error}")
+
+        # What the agent actually said, read off the finished screen. A take
+        # that shows a quota notice where the caption claims the agent worked
+        # is the defect this check exists for.
+        shown = page.evaluate(
+            "(document.getElementById('adv-en-t')?.textContent || '') + ' ' + "
+            "(document.getElementById('chain')?.textContent || '')")
         marks = page.evaluate("window.__demoMarks")
         facts = page.evaluate("window.__demoFacts")
         elapsed = page.evaluate("window.__demoElapsed")
@@ -80,6 +175,14 @@ def record() -> Path:
     }, indent=2))
     print(f"lead-in {lead_in:.2f}s, scene {elapsed:.1f}s")
 
+    for phrase in NOT_AN_ANSWER:
+        if phrase.lower() in shown.lower():
+            raise SystemExit(
+                f"the finished screen still says {phrase!r}, so the agent did "
+                "not answer on camera and this take is not usable")
+    if len(marks) != 8:
+        raise SystemExit(f"expected eight beats, got {len(marks)}")
+
     if problems:
         print("page problems:")
         for p_ in problems:
@@ -90,15 +193,20 @@ def record() -> Path:
 
 
 def main() -> None:
+    preflight()
     webm = record()
     size_mb = webm.stat().st_size / 1e6
     print(f"captured {webm.name}  {size_mb:.1f} MB")
 
-    audio = HERE / "narration.m4a"
+    # No audio here. narrate.py owns the mux, because narration is timed to the
+    # beats of the take that has just been written: the previous take's
+    # narration is always the wrong length for this one. Muxing it anyway, with
+    # -shortest, silently truncated a 76.7s take to 62.8s.
+    stale = HERE / "narration.m4a"
+    if stale.exists():
+        stale.unlink()
+        print("removed the previous take's narration")
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", str(webm)]
-    if audio.exists():
-        cmd += ["-i", str(audio), "-c:a", "aac", "-b:a", "160k", "-shortest"]
-        print("muxing narration")
     cmd += [
         # fps as a filter, not -r. As an output flag, -r reinterprets the
         # source frames at the new rate instead of resampling them: a 69.3s

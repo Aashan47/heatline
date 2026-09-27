@@ -24,6 +24,7 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types
 from google.genai.errors import ClientError, ServerError
 
+from .advicecache import AdviceCache
 from .agent import MODEL, root_agent
 from .config import DEFAULT_PROFILE, SUPPORTED_HORIZON_HOURS
 from .ingest import ATTRIBUTION
@@ -39,6 +40,12 @@ APP_NAME = "heatline"
 ADVISE_LIMIT = int(os.environ.get("HEATLINE_ADVISE_LIMIT", "5"))
 ADVISE_WINDOW = int(os.environ.get("HEATLINE_ADVISE_WINDOW", "3600"))
 _limiter = RateLimiter(limit=ADVISE_LIMIT, window_seconds=ADVISE_WINDOW)
+
+# An identical question inside the window returns the answer already paid for.
+# A hit spends no quota, so it neither calls the model nor uses the visitor's
+# allowance. Set the TTL to 0 to turn it off.
+_advice_cache = AdviceCache(
+    ttl_seconds=int(os.environ.get("HEATLINE_ADVICE_TTL", "600")))
 
 # One agent answer costs several model calls, so a free tier rate limit is a
 # normal condition here. Retry a few times before giving up.
@@ -137,6 +144,14 @@ async def advise(
     session: str = "demo",
 ) -> dict:
     """Run the agent. The prose is the model's; every number in it came from a tool."""
+    cache_key = AdviceCache.key(q, DEFAULT_PROFILE, True)
+    if _advice_cache.ttl > 0:
+        cached = _advice_cache.get(cache_key)
+        if cached is not None:
+            # Answered without the model, so before the rate limit check: the
+            # limit protects the quota, and this costs none of it.
+            return {**cached, "cached": True}
+
     allowed, remaining, retry = _limiter.check(
         client_key(request.headers, request.client.host if request.client else None))
     if not allowed:
@@ -220,7 +235,7 @@ async def advise(
             },
         )
 
-    return {
+    answer = {
         "question": q,
         "answer": "".join(chunks).strip(),
         "tools_called": calls,
@@ -228,6 +243,11 @@ async def advise(
         "questions_left_this_hour": remaining,
         "attribution": ATTRIBUTION,
     }
+    # Only a real answer is worth keeping. An empty one would pin a failure in
+    # place for the whole TTL.
+    if _advice_cache.ttl > 0 and answer["answer"]:
+        _advice_cache.put(cache_key, answer)
+    return {**answer, "cached": False}
 
 
 _ASSET_REF = re.compile(r"/static/([A-Za-z0-9_.\-]+)")
