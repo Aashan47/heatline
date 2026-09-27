@@ -82,8 +82,9 @@ def day_endpoint(
     hours: int = 12,
     profile: str = DEFAULT_PROFILE,
     acclimatized: bool = True,
+    from_hour: str | None = None,
 ) -> JSONResponse:
-    out = assess_day(profile, acclimatized, hours)
+    out = assess_day(profile, acclimatized, hours, from_hour)
     return JSONResponse(out, status_code=200 if out.get("ok") else 409)
 
 
@@ -215,7 +216,7 @@ is checkable without a language model.</p>
   <li><code>/status</code> how old the data is, and how far ahead this answers</li>
   <li><code>/limit</code> the NIOSH limit interval for this worker</li>
   <li><code>/assess</code> one hour: under, over, or undetermined</li>
-  <li><code>/day?hours=12</code> the next hours of a shift</li>
+  <li><code>/day?hours=12</code> a shift window, or <code>&amp;from_hour=2026-09-28T09:00</code></li>
   <li><code>/advise?q=...</code> the agent, in English and Urdu</li>
 </ul>
 <p>A request outside the supported {SUPPORTED_HORIZON_HOURS} hour horizon, or

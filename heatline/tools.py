@@ -179,27 +179,51 @@ def assess_day(
     profile_key: str = DEFAULT_PROFILE,
     acclimatized: bool = True,
     hours: int = 24,
+    from_hour: str | None = None,
 ) -> dict:
-    """Assess the next N hours from now, capped at the supported horizon."""
+    """Assess a window of hours, for planning a shift.
+
+    Defaults to starting now. from_hour lets a rider ask about a shift that has
+    not started yet, which is the more useful question: at eight in the evening,
+    "how is right now" is not what anyone needs to know.
+    """
     f = _forecast()
 
     fresh = check_freshness(f)
     if not fresh.ok:
         return {"ok": False, "refusal": "stale_data", "reason": fresh.reason}
 
-    start = f.index_of(current_hour_iso())
-    if start is None:
+    if from_hour is None:
+        start = f.index_of(current_hour_iso())
+        if start is None:
+            return {
+                "ok": False,
+                "refusal": "current_hour_missing",
+                "reason": (
+                    f"The current Karachi hour {current_hour_iso()} is not in "
+                    f"the forecast series, which runs {f.times[0]} to "
+                    f"{f.times[-1]}. This tool will not advise from a series "
+                    f"that does not cover now."
+                ),
+            }
+    else:
+        horizon = check_horizon(f, from_hour)
+        if not horizon.ok:
+            return {"ok": False, "refusal": "outside_horizon",
+                    "reason": horizon.reason}
+        start = horizon.requested_hour_offset
+
+    end = min(start + hours, len(f), SUPPORTED_HORIZON_HOURS)
+    if end <= start:
         return {
             "ok": False,
-            "refusal": "current_hour_missing",
+            "refusal": "outside_horizon",
             "reason": (
-                f"The current Karachi hour {current_hour_iso()} is not in the "
-                f"forecast series, which runs {f.times[0]} to {f.times[-1]}. "
-                f"This tool will not advise from a series that does not cover now."
+                f"A window starting at {f.times[start]} has no hours inside the "
+                f"{SUPPORTED_HORIZON_HOURS} hour horizon this tool answers for."
             ),
         }
 
-    end = min(start + hours, len(f), SUPPORTED_HORIZON_HOURS)
     rows = [
         assess(wbgt_for_hour(f, i), profile_key=profile_key,
                acclimatized=acclimatized).as_dict()

@@ -137,3 +137,35 @@ def test_resolve_hour_rejects_bad_input_rather_than_guessing():
 def test_resolve_hour_pads_single_digit_hours():
     assert tools.resolve_hour("today", 9)["iso_hour"].endswith("T09:00")
     assert tools.resolve_hour("today", 0)["iso_hour"].endswith("T00:00")
+
+
+def test_day_accepts_a_named_start_hour(forecast):
+    """A rider at eight in the evening wants tomorrow's shift, not right now."""
+    tools.reset_forecast(forecast)
+    try:
+        out = tools.assess_day(hours=6, from_hour=forecast.times[9])
+    finally:
+        tools.reset_forecast()
+    assert out["ok"] is True
+    assert out["from_hour"] == forecast.times[9]
+    assert len(out["hours"]) == 6
+
+
+def test_day_refuses_a_start_hour_beyond_the_horizon(forecast):
+    tools.reset_forecast(forecast)
+    try:
+        out = tools.assess_day(from_hour=forecast.times[SUPPORTED_HORIZON_HOURS + 1])
+    finally:
+        tools.reset_forecast()
+    assert out["ok"] is False and out["refusal"] == "outside_horizon"
+
+
+def test_day_window_is_clipped_to_the_horizon(forecast):
+    """A 24 hour window starting near the horizon must not run past it."""
+    tools.reset_forecast(forecast)
+    try:
+        out = tools.assess_day(hours=24, from_hour=forecast.times[SUPPORTED_HORIZON_HOURS - 3])
+    finally:
+        tools.reset_forecast()
+    assert out["ok"] is True
+    assert len(out["hours"]) == 3
