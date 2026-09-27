@@ -1,6 +1,6 @@
 {
-  "lead_in": 1.482,
-  "elapsed": 57.211,
+  "lead_in": 1.522,
+  "elapsed": 59.996,
   "beats": [
     {
       "id": "open",
@@ -9,50 +9,41 @@
     },
     {
       "id": "ask",
-      "at": 3.6,
-      "ready": 6.55
-    },
-    {
-      "id": "tools",
-      "at": 9.6,
-      "ready": 12.04
+      "at": 3,
+      "ready": 14.06
     },
     {
       "id": "verdict",
-      "at": 17.6,
-      "ready": 17.61
+      "at": 16.06,
+      "ready": 24.1
     },
     {
       "id": "band",
-      "at": 25.6,
-      "ready": 25.6
+      "at": 31.7,
+      "ready": 31.7
     },
     {
       "id": "strip",
-      "at": 32.8,
-      "ready": 32.81
+      "at": 38.51,
+      "ready": 38.51
     },
     {
       "id": "refuse",
-      "at": 38.61,
-      "ready": 41.94
+      "at": 44.71,
+      "ready": 47.99
     },
     {
       "id": "withheld",
-      "at": 45.81,
-      "ready": 45.81
+      "at": 50.39,
+      "ready": 50.39
     },
     {
       "id": "close",
-      "at": 52.01,
-      "ready": 52.01
+      "at": 55.39,
+      "ready": 55.39
     }
   ],
   "facts": {
-    "air_c": "30.5",
-    "wbgt_c": "29.4",
-    "limit": "27.5to29.5\u00b0C",
-    "verdict": "Cannot tell",
     "counts": {
       "over": 1,
       "undetermined": 7,

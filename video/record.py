@@ -100,8 +100,13 @@ def main() -> None:
         cmd += ["-i", str(audio), "-c:a", "aac", "-b:a", "160k", "-shortest"]
         print("muxing narration")
     cmd += [
+        # fps as a filter, not -r. As an output flag, -r reinterprets the
+        # source frames at the new rate instead of resampling them: a 69.3s
+        # capture of 1732 frames came out as a 58s file playing 14% fast, and
+        # the closing slate fell off the end entirely. The filter duplicates
+        # frames and keeps real time.
+        "-vf", "fps=30,format=yuv420p",
         "-c:v", "libx264", "-preset", "slow", "-crf", "19",
-        "-pix_fmt", "yuv420p", "-r", "30",
         "-movflags", "+faststart", str(OUT),
     ]
     subprocess.run(cmd, check=True)

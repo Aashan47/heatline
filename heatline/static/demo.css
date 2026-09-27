@@ -90,9 +90,10 @@ body.demo .verdict-word { font-size: 42px; }
 .slate.on { opacity: 1; }
 .slate h1 { font: 800 78px/1.07 'Fira Sans'; letter-spacing: -.035em; color: #fff; }
 .slate h1 .hl { color: var(--over); }
-.slate p { font: 300 29px/1.5 'Fira Sans'; color: var(--text-2);
-           margin-top: 24px; max-width: 32ch; }
-.slate .repo { font: 600 32px/1 'Fira Code'; color: var(--under); margin-top: 34px; }
+.slate p { font: 300 25px/1.5 'Fira Sans'; color: var(--text-2);
+           margin-top: 22px; max-width: 46ch; }
+.slate .repo { font: 600 32px/1 'Fira Code'; color: var(--under); margin-top: 30px; }
+.slate .repo.big { font-size: 52px; letter-spacing: -.02em; margin-top: 26px; }
 .slate .foot { font: 400 17px/1.6 'Fira Sans'; color: var(--text-3); margin-top: 26px; }
 
 .prog { position: fixed; left: 0; bottom: 0; height: 3px; width: 0; z-index: 60;

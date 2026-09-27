@@ -103,11 +103,10 @@ def lines_for(facts: dict) -> dict[str, str]:
     return {
         "open": "A delivery rider in Karachi wants to know whether they can work "
                 "this afternoon.",
-        "ask": "They ask the agent in the words they would actually use, and it "
-               "works out which hour they mean.",
-        "tools": "It reads the public forecast and computes the heat exposure.",
-        "verdict": f"The thermometer reads {air}. The exposure index reads "
-                   f"{wbgt}, and that is the one that decides.",
+        "ask": "They ask in their own words.",
+        "verdict": f"The agent resolves the hour and computes the exposure. The "
+                   f"thermometer reads {air}. The exposure index reads {wbgt}, "
+                   f"and that is the one that decides.",
         "band": "Blue is exposure. The amber band is the NIOSH limit, and it is "
                 "a band because the workload is a range.",
         "strip": f"So for {undet} of these hours it will not call it either way. "

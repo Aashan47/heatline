@@ -42,11 +42,13 @@ chrome.innerHTML = `
     <p>An exposure limit most weather apps cannot see.</p>
   </div>
   <div class="slate" id="slate-close">
-    <h1>Every number has a<br>primary source</h1>
-    <p>WBGT by Liljegren via ECMWF thermofeel. Limits from NIOSH 2016-106.</p>
-    <div class="repo">github.com/Aashan47/heatline</div>
-    <div class="foot">Built with Gemini and the Agent Development Kit.
-      Weather data by Open-Meteo.com, CC BY 4.0.</div>
+    <h1>Open it on your phone</h1>
+    <div class="repo big">heat.aashanjaved.com</div>
+    <p>Every formula quoted from its primary document. WBGT by Liljegren via
+      ECMWF thermofeel, limits from NIOSH 2016-106.</p>
+    <div class="foot">Code at github.com/Aashan47/heatline &nbsp;&middot;&nbsp;
+      Built with Gemini and the Agent Development Kit &nbsp;&middot;&nbsp;
+      Weather data by Open-Meteo.com, CC BY 4.0</div>
   </div>
   <div class="cap" id="cap"><div class="kicker" id="cap-k"></div>
     <div class="line" id="cap-l"></div></div>
@@ -113,7 +115,7 @@ const slate = (id, on) => $(id).classList.toggle('on', on);
 
 /* Wait for the picture to actually show something, with a ceiling so a stall
    cannot hang the recording. */
-async function until(fn, timeout = 30000) {
+async function until(fn, timeout = 8000) {
   const t0 = performance.now();
   while (performance.now() - t0 < timeout) {
     try { if (fn()) return true; } catch (e) { /* not ready */ }
@@ -135,12 +137,12 @@ const FROM = '2026-09-28T08:00';
 let pending = null;
 
 const BEATS = [
-  { id: 'open', hold: 3.6, run: async () => {
+  { id: 'open', hold: 3.0, run: async () => {
       slate('slate-open', true);
       caption('Karachi, 28 September', 'A delivery rider wants to know about this afternoon.');
     } },
 
-  { id: 'ask', hold: 6.0, run: async () => {
+  { id: 'ask', hold: 2.0, run: async () => {
       slate('slate-open', false);
       window.heatline.reveal();
       const loaded = await window.heatline.load(HOUR, FROM);
@@ -151,20 +153,17 @@ const BEATS = [
       await point('#ask-go', { tap: true });
       window.heatline.ask('Can I work at 1pm today?');
     },
-    at: () => seen('#c-adv', /calling tools|cannot|degrees|advisory/i) },
+    at: () => seen('#ask-in', /1pm/) },
 
-  { id: 'tools', hold: 8.0, zoom: '#chain', scale: 1.5, run: async () => {
+  { id: 'verdict', hold: 7.6, zoom: '.readings', scale: 1.5, run: async () => {
+      // tools and verdict used to be two beats. Their pictures arrive together,
+      // so the first was left with under a second of room and its line ran into
+      // the second. One moment, one beat.
       caption('The agent works',
-        'It resolves which hour is meant, reads the forecast, and computes the exposure.');
-    },
-    at: () => seen('#chain', /assess_hour/) },
-
-  { id: 'verdict', hold: 8.0, zoom: '.readings', scale: 1.55, run: async () => {
-      caption('Two different numbers',
-        'One is the air temperature. The other is the exposure the limit is defined on.');
+        'It resolves the hour, reads the forecast, and computes the exposure.');
     },
     at: () => {
-      if (!seen('#r-wbgt', /\d/)) return false;
+      if (!seen('#chain', /assess_hour/) || !seen('#r-wbgt', /\d/)) return false;
       const num = (id) => ($(id).textContent || '').replace(/[^\d.]/g, '');
       window.__demoFacts = {
         air_c: num('r-air'),
@@ -175,12 +174,12 @@ const BEATS = [
       return true;
     } },
 
-  { id: 'band', hold: 7.2, zoom: '#c-band', scale: 1.42, run: async () => {
+  { id: 'band', hold: 6.8, zoom: '#c-band', scale: 1.42, run: async () => {
       caption('Against the limit',
         'Blue is exposure. The amber band is the NIOSH limit, and it is a band because the workload is.');
     } },
 
-  { id: 'strip', hold: 5.8, zoom: '#c-strip', scale: 1.45, run: async () => {
+  { id: 'strip', hold: 6.2, zoom: '#c-strip', scale: 1.45, run: async () => {
       caption('It says when it cannot tell',
         'Inside the band, whether this rider is over depends on how hard they are working.');
       // The second agent answer takes 7 to 20 seconds. Asking for it here, two
@@ -190,7 +189,7 @@ const BEATS = [
         + encodeURIComponent('What about 2pm on 29 September?'));
     } },
 
-  { id: 'refuse', hold: 7.2, zoom: '#c-verdict', scale: 1.45, run: async () => {
+  { id: 'refuse', hold: 2.4, zoom: '#c-verdict', scale: 1.45, run: async () => {
       camera(null);
       caption('A question it will not answer', 'Now they ask about the day after tomorrow.');
       await point('#ask-in', { tap: true });
@@ -208,13 +207,13 @@ const BEATS = [
     },
     at: () => seen('#v-word', /No advice/) },
 
-  { id: 'withheld', hold: 6.2, zoom: '#c-adv', scale: 1.4, run: async () => {
+  { id: 'withheld', hold: 5.0, zoom: '#c-adv', scale: 1.4, run: async () => {
       caption('It declines, in both languages',
         'Past the horizon it answers for, every reading is withheld and the agent says so.');
     },
     at: () => seen('#adv-ur-t', /\S/) },
 
-  { id: 'close', hold: 5.2, run: async () => {
+  { id: 'close', hold: 4.6, run: async () => {
       camera(null);
       $('cur').classList.remove('on');
       slate('slate-close', true);
@@ -239,10 +238,16 @@ async function play() {
     if (b.zoom) camera(b.zoom, b.scale);
     // The beat's hold begins once the picture is right, not when it was asked
     // for, so narration written against a beat always lands on its own screen.
-    const spent = (performance.now() - t0) / 1000 - start;
-    marks.push({ id: b.id, at: +start.toFixed(2), ready: +(start + spent).toFixed(2) });
-    await sleep(Math.max(0, b.hold * 1000 - (performance.now() - t0 - start * 1000)));
+    const ready = (performance.now() - t0) / 1000;
+    marks.push({ id: b.id, at: +start.toFixed(2), ready: +ready.toFixed(2) });
+    // Hold for the full duration *after* the picture is ready, not minus the
+    // time spent waiting for it. Subtracting the wait meant a beat that waited
+    // eight seconds for the agent then held for one, and its narration ran
+    // straight into the next picture. The comment always said this; the
+    // arithmetic did not.
+    await sleep(b.hold * 1000);
   }
+
   caption(null, null);
   window.__demoMarks = marks;
   // The picture is live data. Narration that states a number must take it from
