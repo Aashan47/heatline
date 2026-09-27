@@ -69,7 +69,7 @@ fi
 gcloud config set project "$PROJECT" --quiet
 
 # Fail early and legibly rather than part way through a build.
-BILLING="$(gcloud beta billing projects describe "$PROJECT" \
+BILLING="$(gcloud billing projects describe "$PROJECT" \
            --format='value(billingEnabled)' 2>&1 || true)"
 if ! printf '%s' "$BILLING" | grep -qi '^true$'; then
   cat >&2 <<MSG
