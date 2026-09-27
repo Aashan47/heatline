@@ -1,0 +1,13 @@
+# Keep the build context small: it is uploaded to Cloud Build on every deploy.
+.git/
+.venv/
+.cache/
+.pytest_cache/
+__pycache__/
+*.pyc
+tests/
+probes/
+video/
+KEY-HANDLING.md
+SOURCES.md
+README.md

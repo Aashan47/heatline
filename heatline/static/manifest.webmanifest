@@ -1,0 +1,14 @@
+{
+  "name": "heatline: Karachi heat exposure",
+  "short_name": "heatline",
+  "description": "Is an outdoor worker in Karachi over the occupational heat limit right now?",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#070A0F",
+  "theme_color": "#070A0F",
+  "lang": "en",
+  "icons": [
+    { "src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

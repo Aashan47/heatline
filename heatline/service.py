@@ -15,7 +15,7 @@ import os
 import re
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from google.adk.runners import Runner
@@ -27,9 +27,17 @@ from .agent import MODEL, root_agent
 from .config import DEFAULT_PROFILE, SUPPORTED_HORIZON_HOURS
 from .ingest import ATTRIBUTION
 from .keys import ensure_google_api_key
+from .ratelimit import RateLimiter, client_key
 from .tools import assess_day, assess_hour, data_status, exposure_limit
 
 APP_NAME = "heatline"
+
+# Only /advise is limited: it is the only endpoint that spends quota. Five an
+# hour is enough for a visitor to ask a couple of real questions and see the
+# agent work, and not enough to drain a day.
+ADVISE_LIMIT = int(os.environ.get("HEATLINE_ADVISE_LIMIT", "5"))
+ADVISE_WINDOW = int(os.environ.get("HEATLINE_ADVISE_WINDOW", "3600"))
+_limiter = RateLimiter(limit=ADVISE_LIMIT, window_seconds=ADVISE_WINDOW)
 
 # One agent answer costs several model calls, so a free tier rate limit is a
 # normal condition here. Retry a few times before giving up.
@@ -53,6 +61,7 @@ def health() -> dict:
         "model": MODEL,
         "model_key_present": ensure_google_api_key(),
         "supported_horizon_hours": SUPPORTED_HORIZON_HOURS,
+        "advise_limit_per_hour": ADVISE_LIMIT,
         "attribution": ATTRIBUTION,
     }
 
@@ -122,10 +131,30 @@ async def _ensure_session(session_id: str) -> None:
 
 @app.get("/advise")
 async def advise(
+    request: Request,
     q: str = "Should I ride right now?",
     session: str = "demo",
 ) -> dict:
     """Run the agent. The prose is the model's; every number in it came from a tool."""
+    allowed, remaining, retry = _limiter.check(
+        client_key(request.headers, request.client.host if request.client else None))
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "rate limit",
+                "message": (
+                    f"This public demo allows {ADVISE_LIMIT} agent "
+                    f"question{'' if ADVISE_LIMIT == 1 else 's'} per hour per "
+                    f"visitor, because each one spends the deployer's Gemini "
+                    f"quota. Try again in {retry // 60 + 1} "
+                    f"minute{'' if retry // 60 + 1 == 1 else 's'}."
+                ),
+                "retry_after_seconds": retry,
+                "advice": "The readings and the hour by hour view are not limited.",
+            },
+            headers={"Retry-After": str(retry)},
+        )
     if not ensure_google_api_key():
         raise HTTPException(
             status_code=503,
@@ -195,6 +224,7 @@ async def advise(
         "answer": "".join(chunks).strip(),
         "tools_called": calls,
         "model": MODEL,
+        "questions_left_this_hour": remaining,
         "attribution": ATTRIBUTION,
     }
 

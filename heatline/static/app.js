@@ -175,9 +175,17 @@ async function ask(question) {
     const a = await get('/advise?q=' + encodeURIComponent(question));
     if (a.status === 200) {
       paintAdvice(a.body.answer, a.body.tools_called);
+    } else if (a.status === 429) {
+      // Being capped is not the same as being broken, and telling a visitor
+      // the model is down when they simply used their allowance is a lie.
+      paintAdvice(a.body?.detail?.message
+        || 'You have used this hour\'s agent questions on this public demo.', []);
+    } else if (a.status === 503) {
+      paintAdvice('The model is temporarily unavailable. The readings above did '
+        + 'not depend on it.', []);
     } else {
-      $('adv-en-t').textContent =
-        'The model is unavailable. The readings above did not depend on it.';
+      paintAdvice('The agent could not be reached. The readings above did not '
+        + 'depend on it.', []);
     }
     return a;
   } finally {

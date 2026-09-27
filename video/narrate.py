@@ -39,10 +39,13 @@ VIDEO = HERE / "heatline-demo.mp4"
 
 ENGINE = os.environ.get("HEATLINE_TTS", "say")
 
-# macOS. Rishi is en_IN, male, and reads level. Rate is words per minute; 178
-# is a measured product-demo pace rather than the 175 default.
-SAY_VOICE = os.environ.get("HEATLINE_VOICE", "Rishi")
-SAY_RATE = int(os.environ.get("HEATLINE_RATE", "178"))
+# macOS, local, no quota. Aman is en_IN and is one of the neural Siri voices,
+# which is why it does not have the broken, formant quality of Rishi; Aashan
+# picked it from a four-way blind comparison on 2026-09-27. Rate is words per
+# minute, and Aman reads slightly slower than Rishi at the same setting, so 182
+# rather than 178 to keep the lines inside their beats.
+SAY_VOICE = os.environ.get("HEATLINE_VOICE", "Aman (English (India))")
+SAY_RATE = int(os.environ.get("HEATLINE_RATE", "182"))
 
 # Gemini, per the house standard.
 GEMINI_MODEL = "gemini-2.5-flash-preview-tts"
@@ -59,13 +62,20 @@ GEMINI_STYLE = (
 # sits under a voice without fighting it.
 MUSIC = Path("/Users/aashanjaved/Desktop/Drive -D - Aashan/Valfirst/"
              "Music for Reels/ES_Towntones - Dusty Decks.mp3")
-# Levels. Voice clips are normalised to a common loudness so one line is not
-# noticeably louder than the next, the bed sits well under it, and the finished
-# mix is brought to a web delivery target. Measured, because the first cut came
-# out at -31.8 LUFS integrated, which is close to inaudible on a laptop.
-VOICE_LUFS = -18.0
-MUSIC_DB = float(os.environ.get("HEATLINE_MUSIC_DB", "-13"))
-TARGET_LUFS = float(os.environ.get("HEATLINE_TARGET_LUFS", "-16"))
+# Levels, all set by measurement.
+#
+# Two earlier mixes were wrong in ways worth recording. The first came out at
+# -31.8 LUFS integrated, close to inaudible. The second fixed the level but put
+# the bed only 4.6 dB under the voice, and ran loudnorm across the finished mix,
+# which lifts quiet passages: the music-only gaps measured louder than the
+# speech and the bed audibly swelled between lines.
+#
+# So: the voice is the loud element, the music is set by a **static** gain
+# computed from its own measured loudness, and nothing dynamic touches the mix.
+# A static gain cannot pump, which is the whole reason for doing it this way.
+VOICE_LUFS = float(os.environ.get("HEATLINE_VOICE_LUFS", "-16"))
+# 18 dB under the voice. Below about 15 the bed starts competing with speech.
+MUSIC_LUFS = float(os.environ.get("HEATLINE_MUSIC_LUFS", "-34"))
 
 ONES = {"0": "zero", "1": "one", "2": "two", "3": "three", "4": "four",
         "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine",
@@ -91,16 +101,23 @@ def lines_for(facts: dict) -> dict[str, str]:
     undet = ONES.get(str(counts.get("undetermined", "")),
                      str(counts.get("undetermined", "")))
     return {
-        "open": "A delivery rider in Karachi wants to know about this afternoon.",
-        "ask": "They ask in the words they would actually use.",
-        "tools": "The agent reads the forecast and computes the exposure.",
-        "verdict": f"The thermometer reads {air}. The exposure index reads {wbgt}.",
-        "band": "Blue is exposure. The amber band is the limit, and it is a band "
-                "because the workload is.",
-        "strip": f"For {undet} of these hours it will not call it either way.",
+        "open": "A delivery rider in Karachi wants to know whether they can work "
+                "this afternoon.",
+        "ask": "They ask the agent in the words they would actually use, and it "
+               "works out which hour they mean.",
+        "tools": "It reads the public forecast and computes the heat exposure.",
+        "verdict": f"The thermometer reads {air}. The exposure index reads "
+                   f"{wbgt}, and that is the one that decides.",
+        "band": "Blue is exposure. The amber band is the NIOSH limit, and it is "
+                "a band because the workload is a range.",
+        "strip": f"So for {undet} of these hours it will not call it either way. "
+                 "Inside the band it depends on how hard this rider is actually "
+                 "working, and a forecast cannot know that.",
         "refuse": "Now they ask about the day after tomorrow.",
-        "withheld": "It declines. Every reading is withheld, in both languages.",
-        "close": "Every formula quoted from its source. The code is open.",
+        "withheld": "It declines, and it does not soften that. Every reading is "
+                    "withheld, in both languages.",
+        "close": "Every formula is quoted from its primary document. The code and "
+                 "the sources are open.",
     }
 
 
@@ -122,7 +139,7 @@ def ff(args: list[str]) -> None:
 def normalise(src: Path, dest: Path) -> None:
     """One loudness for every line, so no line jumps out against the next."""
     ff(["-i", str(src), "-af",
-        f"loudnorm=I={VOICE_LUFS}:TP=-1.5:LRA=11", "-ar", "24000", "-ac", "1",
+        f"loudnorm=I={VOICE_LUFS}:TP=-1.5:LRA=7", "-ar", "24000", "-ac", "1",
         str(dest)])
 
 
@@ -171,6 +188,19 @@ def synth_gemini(text: str, dest: Path) -> None:
             print(f"      quota, waiting {wait}s", flush=True)
             time.sleep(wait)
     raise SystemExit("TTS quota did not clear. Try HEATLINE_TTS=say.")
+
+
+def loudness(path: Path, seconds: float | None = None) -> float:
+    """Integrated loudness in LUFS, measured rather than assumed."""
+    args = ["ffmpeg", "-hide_banner", "-nostats"]
+    if seconds:
+        args += ["-t", f"{seconds}"]
+    args += ["-i", str(path), "-af", "ebur128=framelog=quiet", "-f", "null", "-"]
+    r = subprocess.run(args, capture_output=True, text=True)
+    m = re.search(r"I:\s*(-?\d+\.\d+) LUFS", r.stderr)
+    if not m:
+        raise SystemExit(f"could not measure loudness of {path.name}")
+    return float(m.group(1))
 
 
 def duration(path: Path) -> float:
@@ -230,25 +260,26 @@ def main() -> None:
 
     music_idx = len(placed) + 1
     if MUSIC.exists():
+        # Measure the track, then apply one fixed gain. No compressor keyed on
+        # the voice: at 18 dB down the bed does not need ducking, and ducking is
+        # what made the previous mix breathe in and out.
+        src = loudness(MUSIC, seconds=video_len)
+        gain = MUSIC_LUFS - src
         inputs += ["-i", str(MUSIC)]
-        fade_out = max(0.0, video_len - 2.6)
+        fade_out = max(0.0, video_len - 2.8)
         filters.append(
             f"[{music_idx}:a]aformat=sample_rates=24000:channel_layouts=mono,"
             f"atrim=0:{video_len:.3f},asetpts=N/SR/TB,"
-            f"volume={MUSIC_DB}dB,"
-            f"afade=t=in:st=0:d=1.6,afade=t=out:st={fade_out:.2f}:d=2.6[bed]")
-        # The voice keys a compressor on the music, so the bed steps back under
-        # speech and comes forward between lines.
-        filters.append("[bed][vo]sidechaincompress=threshold=0.02:ratio=9:"
-                       "attack=18:release=380[ducked]")
-        filters.append(
-            "[ducked][vo]amix=inputs=2:duration=first:normalize=0,"
-            f"loudnorm=I={TARGET_LUFS}:TP=-1.5:LRA=11,"
-            "alimiter=limit=0.95[out]")
-        print(f"music  {MUSIC.name}  at {MUSIC_DB} dB, ducked under the voice")
-    else:
-        filters.append(f"[vo]loudnorm=I={TARGET_LUFS}:TP=-1.5:LRA=11,"
+            f"volume={gain:.2f}dB,"
+            f"afade=t=in:st=0:d=2.0,afade=t=out:st={fade_out:.2f}:d=2.8[bed]")
+        filters.append("[bed][vo]amix=inputs=2:duration=first:normalize=0,"
                        "alimiter=limit=0.95[out]")
+        print(f"music  {MUSIC.name}")
+        print(f"       measured {src:.1f} LUFS, gain {gain:+.1f} dB "
+              f"to sit at {MUSIC_LUFS:.0f} LUFS, "
+              f"{abs(MUSIC_LUFS - VOICE_LUFS):.0f} dB under the voice")
+    else:
+        filters.append("[vo]alimiter=limit=0.95[out]")
         print("music  none found, voice only")
 
     ff([*inputs, "-filter_complex", ";".join(filters), "-map", "[out]",
@@ -260,8 +291,7 @@ def main() -> None:
         capture_output=True, text=True)
     m = re.search(r"I:\s*(-?\d+\.\d+) LUFS", loud.stderr)
     if m:
-        print(f"integrated loudness {float(m.group(1)):.1f} LUFS "
-              f"(target {TARGET_LUFS})")
+        print(f"integrated loudness {float(m.group(1)):.1f} LUFS")
 
     got = duration(OUT)
     print(f"\n{OUT.name}  {got:.2f}s against video {video_len:.2f}s"

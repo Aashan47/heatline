@@ -1,0 +1,103 @@
+/* Phone layout.
+   Written for the person the tool is for: a rider holding a phone in sunlight,
+   one hand, deciding in a few seconds whether to take the next order.
+
+   Three departures from the desktop layout, each for a reason:
+   1. The verdict comes first and is large. On a phone it is the only thing that
+      has to be readable at arm's length.
+   2. Urdu is given the same weight as English rather than sitting underneath
+      it. For this audience it is not a translation, it is the language.
+   3. The chart is hidden. A rider does not need a time series to decide about
+      the next twenty minutes, and it is the slowest thing to read.
+   The hour strip stays, because "when does this get better" is the second
+   question anyone asks. */
+
+@media (max-width: 760px) {
+  :root {
+    --s5: 16px; --s6: 18px; --s7: 24px;
+  }
+
+  body { font-size: 16px; }
+
+  .app {
+    max-width: none;
+    padding: max(12px, env(safe-area-inset-top)) 14px
+             calc(96px + env(safe-area-inset-bottom));
+  }
+
+  /* header shrinks to a single line */
+  header.top { padding-bottom: 12px; margin-bottom: 14px; }
+  .brand b { font-size: 19px; }
+  .brand span { display: none; }
+  .place { font-size: 12px; gap: 6px; }
+  .place > span:first-of-type { display: none; }
+
+  /* one column, and the order a phone needs */
+  .grid { display: block; }
+  .grid > div { display: block; }
+  .card { padding: 16px 15px; border-radius: 14px; margin-bottom: 12px; }
+  .card h2 { font-size: 11px; margin-bottom: 12px; }
+
+  /* the verdict, made unmissable */
+  #c-verdict { order: 1; }
+  .verdict { gap: 14px; }
+  .verdict-mark { width: 52px; height: 52px; border-radius: 15px; }
+  .verdict-mark svg { width: 26px; height: 26px; }
+  .verdict-word { font-size: 34px; line-height: 1.02; }
+  .verdict-sub { font-size: 14.5px; max-width: none; }
+
+  .readings { grid-template-columns: repeat(3, 1fr); margin-top: 16px; }
+  .reading { padding: 10px 8px; }
+  .reading .lbl { font-size: 9.5px; letter-spacing: .04em; }
+  .reading .val { font-size: 17px; }
+  .reading .val em { font-size: 10px; margin: 0 1px; }
+
+  /* the chart is desktop only */
+  #c-band { display: none; }
+
+  /* hour strip: tighter rows, still tappable */
+  .hrow { grid-template-columns: 46px 1fr 74px; gap: 9px; padding: 7px 4px; }
+  .hrow .t { font-size: 12px; }
+  .hrow .v { font-size: 11px; }
+  .hbar { height: 8px; }
+
+  /* Urdu first, and the same size as English */
+  .advisory { gap: 12px; }
+  .adv { padding: 13px 14px; }
+  .adv p { font-size: 15px; }
+  .adv.ur { order: -1; }
+  .adv.ur p { font-size: 17.5px; line-height: 1.95; }
+  .chain { gap: 6px; margin-top: 12px; }
+  .chain code { font-size: 10.5px; padding: 2px 6px; }
+
+  /* the ask box pinned where a thumb reaches */
+  #c-adv { position: static; }
+  .ask {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    margin: 0; gap: 8px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+  }
+  .ask input { font-size: 16px; padding: 13px 14px; }  /* 16px stops iOS zooming */
+  .ask button { padding: 13px 18px; min-width: 76px; }
+
+  .thinking { margin-bottom: 12px; }
+
+  .sources { flex-direction: column; gap: 6px; font-size: 11px;
+             margin-top: 18px; padding-top: 14px; }
+}
+
+/* very small phones */
+@media (max-width: 380px) {
+  .verdict-word { font-size: 29px; }
+  .reading .val { font-size: 15px; }
+  .hrow { grid-template-columns: 42px 1fr 66px; }
+}
+
+/* landscape phone: bring the chart back, there is room */
+@media (max-width: 900px) and (orientation: landscape) and (min-height: 380px) {
+  #c-band { display: block; }
+  .band-chart { height: 150px; }
+}

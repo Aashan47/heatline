@@ -135,7 +135,7 @@ const FROM = '2026-09-28T08:00';
 let pending = null;
 
 const BEATS = [
-  { id: 'open', hold: 4.4, run: async () => {
+  { id: 'open', hold: 3.6, run: async () => {
       slate('slate-open', true);
       caption('Karachi, 28 September', 'A delivery rider wants to know about this afternoon.');
     } },
@@ -153,13 +153,13 @@ const BEATS = [
     },
     at: () => seen('#c-adv', /calling tools|cannot|degrees|advisory/i) },
 
-  { id: 'tools', hold: 7.4, zoom: '#chain', scale: 1.5, run: async () => {
+  { id: 'tools', hold: 8.0, zoom: '#chain', scale: 1.5, run: async () => {
       caption('The agent works',
         'It resolves which hour is meant, reads the forecast, and computes the exposure.');
     },
     at: () => seen('#chain', /assess_hour/) },
 
-  { id: 'verdict', hold: 7.2, zoom: '.readings', scale: 1.55, run: async () => {
+  { id: 'verdict', hold: 8.0, zoom: '.readings', scale: 1.55, run: async () => {
       caption('Two different numbers',
         'One is the air temperature. The other is the exposure the limit is defined on.');
     },
@@ -175,12 +175,12 @@ const BEATS = [
       return true;
     } },
 
-  { id: 'band', hold: 6.4, zoom: '#c-band', scale: 1.42, run: async () => {
+  { id: 'band', hold: 7.2, zoom: '#c-band', scale: 1.42, run: async () => {
       caption('Against the limit',
         'Blue is exposure. The amber band is the NIOSH limit, and it is a band because the workload is.');
     } },
 
-  { id: 'strip', hold: 6.2, zoom: '#c-strip', scale: 1.45, run: async () => {
+  { id: 'strip', hold: 5.8, zoom: '#c-strip', scale: 1.45, run: async () => {
       caption('It says when it cannot tell',
         'Inside the band, whether this rider is over depends on how hard they are working.');
       // The second agent answer takes 7 to 20 seconds. Asking for it here, two
@@ -190,7 +190,7 @@ const BEATS = [
         + encodeURIComponent('What about 2pm on 29 September?'));
     } },
 
-  { id: 'refuse', hold: 8.0, zoom: '#c-verdict', scale: 1.45, run: async () => {
+  { id: 'refuse', hold: 7.2, zoom: '#c-verdict', scale: 1.45, run: async () => {
       camera(null);
       caption('A question it will not answer', 'Now they ask about the day after tomorrow.');
       await point('#ask-in', { tap: true });
@@ -208,7 +208,7 @@ const BEATS = [
     },
     at: () => seen('#v-word', /No advice/) },
 
-  { id: 'withheld', hold: 7.4, zoom: '#c-adv', scale: 1.4, run: async () => {
+  { id: 'withheld', hold: 6.2, zoom: '#c-adv', scale: 1.4, run: async () => {
       caption('It declines, in both languages',
         'Past the horizon it answers for, every reading is withheld and the agent says so.');
     },

@@ -1,6 +1,6 @@
 {
-  "lead_in": 1.544,
-  "elapsed": 58.207,
+  "lead_in": 1.482,
+  "elapsed": 57.211,
   "beats": [
     {
       "id": "open",
@@ -9,43 +9,43 @@
     },
     {
       "id": "ask",
-      "at": 4.4,
-      "ready": 7.31
+      "at": 3.6,
+      "ready": 6.55
     },
     {
       "id": "tools",
-      "at": 10.4,
-      "ready": 12.59
+      "at": 9.6,
+      "ready": 12.04
     },
     {
       "id": "verdict",
-      "at": 17.8,
-      "ready": 17.8
+      "at": 17.6,
+      "ready": 17.61
     },
     {
       "id": "band",
-      "at": 25,
-      "ready": 25
+      "at": 25.6,
+      "ready": 25.6
     },
     {
       "id": "strip",
-      "at": 31.4,
-      "ready": 31.4
+      "at": 32.8,
+      "ready": 32.81
     },
     {
       "id": "refuse",
-      "at": 37.6,
-      "ready": 40.95
+      "at": 38.61,
+      "ready": 41.94
     },
     {
       "id": "withheld",
-      "at": 45.61,
-      "ready": 45.61
+      "at": 45.81,
+      "ready": 45.81
     },
     {
       "id": "close",
-      "at": 53.01,
-      "ready": 53.01
+      "at": 52.01,
+      "ready": 52.01
     }
   ],
   "facts": {

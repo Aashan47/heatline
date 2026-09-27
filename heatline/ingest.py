@@ -7,6 +7,7 @@ Licence: CC-BY 4.0, free tier, non-commercial only. See SOURCES.md section 6.
 from __future__ import annotations
 
 import json
+import os
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -32,7 +33,13 @@ HOURLY_FIELDS = (
     "direct_normal_irradiance",
 )
 
-CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache"
+# /tmp on Cloud Run, a project directory locally. The container filesystem is
+# writable but ephemeral and per-instance, so the cache is a per-instance
+# nicety rather than shared state, which is all it was ever meant to be.
+CACHE_DIR = Path(os.environ.get(
+    "HEATLINE_CACHE_DIR",
+    "/tmp/heatline-cache" if os.environ.get("K_SERVICE")
+    else str(Path(__file__).resolve().parent.parent / ".cache")))
 CACHE_TTL_SECONDS = 15 * 60
 
 ATTRIBUTION = "Weather data by Open-Meteo.com, CC BY 4.0"
