@@ -53,15 +53,32 @@ def record() -> Path:
         page.wait_for_function("typeof window.__demoPlay === 'function'", timeout=15000)
 
         total = page.evaluate("window.__demoTotal")
+        # The recording starts when the context opens, before the scene does.
+        # Measuring the offset here is what lets the narration line up with the
+        # finished file rather than with the page's own clock.
+        lead_in = page.evaluate("performance.now()") / 1000.0
         page.evaluate("window.__demoPlay()")
         page.wait_for_function("window.__demoDone === true",
-                               timeout=int((total + 60) * 1000))
-        page.wait_for_timeout(600)
+                               timeout=int((total + 90) * 1000))
+        marks = page.evaluate("window.__demoMarks")
+        facts = page.evaluate("window.__demoFacts")
+        elapsed = page.evaluate("window.__demoElapsed")
+        page.wait_for_timeout(500)
 
         video = page.video
         context.close()
         browser.close()
         path = Path(video.path())
+
+    # Each beat's "ready" is the moment its picture was actually on screen.
+    # Narration is written per beat, so that is the timestamp it must use.
+    NARRATION.write_text(json.dumps({
+        "lead_in": round(lead_in, 3),
+        "elapsed": round(elapsed, 3),
+        "beats": marks,
+        "facts": facts,
+    }, indent=2))
+    print(f"lead-in {lead_in:.2f}s, scene {elapsed:.1f}s")
 
     if problems:
         print("page problems:")

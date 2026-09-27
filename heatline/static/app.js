@@ -146,7 +146,15 @@ function drawStrip(hours, limit) {
 
 /* ---------- advisory ---------- */
 
+function thinking(on, label) {
+  const t = $('thinking');
+  if (!t) return;
+  t.hidden = !on;
+  if (label) $('tlabel').textContent = label;
+}
+
 function paintAdvice(text, chain) {
+  if (text) thinking(false);
   const lines = String(text).split('\n').map((s) => s.trim()).filter(Boolean);
   const ur = lines.filter((l) => /[؀-ۿ]/.test(l)).join(' ');
   const en = lines.filter((l) => !/[؀-ۿ]/.test(l)).join(' ');
@@ -155,6 +163,26 @@ function paintAdvice(text, chain) {
   $('adv-ur').style.display = ur ? '' : 'none';
   $('chain').innerHTML = (chain || []).map((c, i) =>
     (i ? '<span>&rarr;</span>' : '') + `<code>${c}</code>`).join('');
+}
+
+/* ---------- ask ---------- */
+
+async function ask(question) {
+  thinking(true, 'calling tools');
+  paintAdvice('', []);
+  $('adv-en-t').textContent = '';
+  try {
+    const a = await get('/advise?q=' + encodeURIComponent(question));
+    if (a.status === 200) {
+      paintAdvice(a.body.answer, a.body.tools_called);
+    } else {
+      $('adv-en-t').textContent =
+        'The model is unavailable. The readings above did not depend on it.';
+    }
+    return a;
+  } finally {
+    thinking(false);
+  }
 }
 
 /* ---------- freshness ---------- */
@@ -202,13 +230,15 @@ async function load(hour, fromHour) {
 }
 
 window.heatline = { load, paintAdvice, paintRefusal, paintVerdict, get, reveal,
-                    drawChart, drawStrip };
+                    drawChart, drawStrip, ask, thinking };
+
+document.getElementById('ask')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const q = document.getElementById('ask-in').value.trim();
+  if (q) ask(q);
+});
 
 if (!location.search.includes('demo=1')) {
   reveal();
-  load().then(async () => {
-    const a = await get('/advise?q=' + encodeURIComponent('Should I take orders right now?'));
-    if (a.status === 200) paintAdvice(a.body.answer, a.body.tools_called);
-    else $('adv-en-t').textContent = 'The model is unavailable. The numbers above do not depend on it.';
-  });
+  load().then(() => ask('Should I take orders right now?'));
 }

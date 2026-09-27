@@ -1,0 +1,62 @@
+{
+  "lead_in": 1.508,
+  "elapsed": 58.214,
+  "beats": [
+    {
+      "id": "open",
+      "at": 0,
+      "ready": 0
+    },
+    {
+      "id": "ask",
+      "at": 4.4,
+      "ready": 7.44
+    },
+    {
+      "id": "tools",
+      "at": 10.4,
+      "ready": 13.43
+    },
+    {
+      "id": "verdict",
+      "at": 16.81,
+      "ready": 16.81
+    },
+    {
+      "id": "band",
+      "at": 23.21,
+      "ready": 23.21
+    },
+    {
+      "id": "strip",
+      "at": 30.21,
+      "ready": 30.21
+    },
+    {
+      "id": "refuse",
+      "at": 37.21,
+      "ready": 40.52
+    },
+    {
+      "id": "withheld",
+      "at": 45.21,
+      "ready": 45.21
+    },
+    {
+      "id": "close",
+      "at": 52.61,
+      "ready": 52.61
+    }
+  ],
+  "facts": {
+    "air_c": "30.5",
+    "wbgt_c": "29.4",
+    "limit": "27.5to29.5\u00b0C",
+    "verdict": "Cannot tell",
+    "counts": {
+      "over": 1,
+      "undetermined": 7,
+      "under": 3
+    }
+  }
+}

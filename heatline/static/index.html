@@ -84,7 +84,16 @@
       </section>
 
       <section class="card rise" id="c-adv">
-        <h2>Advisory</h2>
+        <h2>Ask the agent</h2>
+        <form class="ask" id="ask" autocomplete="off">
+          <input id="ask-in" type="text" aria-label="Ask about an hour"
+                 placeholder="Can I work this afternoon?">
+          <button id="ask-go" type="submit">Ask</button>
+        </form>
+        <div class="thinking" id="thinking" hidden>
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="tlabel" id="tlabel">calling tools</span>
+        </div>
         <div class="advisory">
           <div class="adv" id="adv-en">
             <div class="who">English</div>

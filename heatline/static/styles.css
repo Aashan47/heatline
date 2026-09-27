@@ -214,3 +214,39 @@ header.top {
   .readings { grid-template-columns: 1fr; }
   .verdict-word { font-size: 32px; }
 }
+
+/* ---------- ask box ---------- */
+
+.ask { display: flex; gap: var(--s2); margin-bottom: var(--s4); }
+.ask input {
+  flex: 1; min-width: 0; padding: 11px var(--s3);
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border-lit); border-radius: var(--r1);
+  font: 400 14.5px/1 'Fira Sans', sans-serif;
+}
+.ask input::placeholder { color: var(--text-3); }
+.ask input:focus { outline: none; border-color: var(--data);
+                   box-shadow: 0 0 0 3px color-mix(in srgb, var(--data) 18%, transparent); }
+.ask button {
+  flex: none; padding: 11px 18px; border-radius: var(--r1); cursor: pointer;
+  background: var(--data); color: #06121f; border: 1px solid transparent;
+  font: 600 14px/1 'Fira Sans', sans-serif;
+  transition: filter .18s var(--ease), transform .18s var(--ease);
+}
+.ask button:hover { filter: brightness(1.08); }
+.ask button:active { transform: translateY(1px); }
+.ask button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.thinking { display: flex; align-items: center; gap: 7px; margin-bottom: var(--s4);
+            color: var(--text-3); font-size: 12.5px; }
+/* A class selector beats the user agent's [hidden] rule, so setting the hidden
+   property alone left the spinner running under a finished answer on camera. */
+.thinking[hidden] { display: none; }
+.thinking .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--data);
+                 animation: pulse 1.05s infinite ease-in-out; }
+.thinking .dot:nth-child(2) { animation-delay: .16s; }
+.thinking .dot:nth-child(3) { animation-delay: .32s; }
+.thinking .tlabel { margin-left: 5px; font-family: 'Fira Code', monospace; }
+@keyframes pulse { 0%,80%,100% { opacity: .25; transform: scale(.82); }
+                   40% { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .thinking .dot { animation: none; opacity: .7; } }
