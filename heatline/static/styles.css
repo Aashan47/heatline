@@ -250,3 +250,12 @@ header.top {
 @keyframes pulse { 0%,80%,100% { opacity: .25; transform: scale(.82); }
                    40% { opacity: 1; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .thinking .dot { animation: none; opacity: .7; } }
+
+/* The Urdu review disclaimer. Shown until phrases.py names a reviewer, because
+   a worker reading safety advice should know whether anyone checked it. */
+.ur-note {
+  margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--border);
+  font: 400 11.5px/1.45 'Fira Sans', sans-serif; color: var(--accent);
+  text-align: left;
+}
+.ur-note[hidden] { display: none; }

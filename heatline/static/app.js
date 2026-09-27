@@ -34,6 +34,21 @@ async function get(path) {
 
 /* ---------- verdict ---------- */
 
+function paintSay(a) {
+  // The fixed, reviewed sentence for this verdict, in both languages. It comes
+  // from the same code path that computed the verdict, so it cannot disagree
+  // with it, and the model never gets to reword it.
+  if (!a.say) return;
+  const extra = (a.also || []);
+  $('adv-en-t').textContent =
+    [a.say.en, ...extra.map((e) => e.en)].join(' ');
+  $('adv-ur-t').textContent =
+    [a.say.ur, ...extra.map((e) => e.ur)].join(' ');
+  $('adv-ur').style.display = '';
+  const note = $('ur-note');
+  if (note) note.hidden = !!a.urdu_reviewed_by;
+}
+
 function paintVerdict(a) {
   const el = $('verdict');
   el.className = 'verdict is-' + (a.verdict === 'undetermined' ? 'undet' : a.verdict);
@@ -47,6 +62,7 @@ function paintVerdict(a) {
 }
 
 function paintRefusal(body) {
+  if (body.say) paintSay(body);
   const el = $('verdict');
   el.className = 'verdict is-over';
   $('v-mark').innerHTML = ICON.over;
@@ -226,6 +242,7 @@ async function load(hour, fromHour) {
     paintVerdict(one.body);
     $('c-verdict').classList.remove('refusal');
   }
+  paintSay(one.body);
 
   const q = new URLSearchParams({ hours: '11' });
   if (fromHour) q.set('from_hour', fromHour);
@@ -237,8 +254,8 @@ async function load(hour, fromHour) {
   return { one, day };
 }
 
-window.heatline = { load, paintAdvice, paintRefusal, paintVerdict, get, reveal,
-                    drawChart, drawStrip, ask, thinking };
+window.heatline = { load, paintAdvice, paintRefusal, paintVerdict, paintSay, get,
+                    reveal, drawChart, drawStrip, ask, thinking };
 
 document.getElementById('ask')?.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -248,5 +265,5 @@ document.getElementById('ask')?.addEventListener('submit', (e) => {
 
 if (!location.search.includes('demo=1')) {
   reveal();
-  load().then(() => ask('Should I take orders right now?'));
+  load();  // the fixed sentence answers it; the agent is opt in via the box
 }

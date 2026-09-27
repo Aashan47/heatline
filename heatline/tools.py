@@ -22,6 +22,7 @@ from .config import (
 )
 from .freshness import check_freshness, check_horizon
 from .ingest import ATTRIBUTION, Forecast, fetch_forecast
+from .phrases import URDU_REVIEWED_BY, both
 from .limits import limit_interval
 from .wbgt import wbgt_for_hour
 
@@ -155,12 +156,16 @@ def assess_hour(
 
     fresh = check_freshness(f)
     if not fresh.ok:
-        return {"ok": False, "refusal": "stale_data", "reason": fresh.reason}
+        return {"ok": False, "refusal": "stale_data", "reason": fresh.reason,
+                "say": both("refuse_stale"), "urdu_reviewed_by": URDU_REVIEWED_BY}
 
     iso_hour = iso_hour or current_hour_iso()
     horizon = check_horizon(f, iso_hour)
     if not horizon.ok:
-        return {"ok": False, "refusal": "outside_horizon", "reason": horizon.reason}
+        return {"ok": False, "refusal": "outside_horizon",
+                "reason": horizon.reason,
+                "say": both("refuse_horizon", hours=SUPPORTED_HORIZON_HOURS),
+                "urdu_reviewed_by": URDU_REVIEWED_BY}
 
     if profile_key not in PROFILES:
         return {"ok": False, "refusal": "unknown_profile",
@@ -172,6 +177,17 @@ def assess_hour(
     out = {"ok": True, **a.as_dict()}
     out["skin_temperature_c"] = SKIN_TEMPERATURE_C
     out["attribution"] = ATTRIBUTION
+
+    # The sentence that says whether it is safe to work is selected here, by the
+    # same code that computed the verdict, and never written by the model.
+    d = a.as_dict()
+    out["say"] = both(a.verdict.value, wbgt=f"{d['wbgt_c']}",
+                      low=f"{d['limit_c'][0]}", high=f"{d['limit_c'][1]}")
+    extra = [both("air_note", air=f"{d['air_c']}")]
+    if hour.airflow_adds_heat:
+        extra.append(both("airflow"))
+    out["also"] = extra
+    out["urdu_reviewed_by"] = URDU_REVIEWED_BY
     return out
 
 
