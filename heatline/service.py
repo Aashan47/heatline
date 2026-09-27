@@ -13,9 +13,11 @@ from __future__ import annotations
 import asyncio
 import os
 import re
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
@@ -33,7 +35,10 @@ APP_NAME = "heatline"
 # normal condition here. Retry a few times before giving up.
 MAX_MODEL_ATTEMPTS = 4
 
+STATIC = Path(__file__).resolve().parent / "static"
+
 app = FastAPI(title="heatline", docs_url=None, redoc_url=None)
+app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 _session_service = InMemorySessionService()
 _runner = Runner(
@@ -194,36 +199,10 @@ async def advise(
     }
 
 
-@app.get("/", response_class=HTMLResponse)
-def index() -> str:
-    return f"""<!doctype html>
-<title>heatline</title>
-<style>
-  :root {{ color-scheme: light dark; }}
-  body {{ font: 15px/1.6 system-ui, sans-serif; max-width: 42rem;
-         margin: 0 auto; padding: 2rem 1rem; }}
-  code {{ background: rgba(127,127,127,.18); padding: .1em .35em;
-          border-radius: .25em; }}
-  li {{ margin: .35rem 0; }}
-</style>
-<h1>heatline</h1>
-<p>Occupational heat exposure for outdoor workers in Karachi. WBGT computed from
-public forecast data by the Liljegren method, compared against the NIOSH
-exposure limit for the worker's workload.</p>
-<p>The numbers and the prose are separate endpoints on purpose. The arithmetic
-is checkable without a language model.</p>
-<ul>
-  <li><code>/status</code> how old the data is, and how far ahead this answers</li>
-  <li><code>/limit</code> the NIOSH limit interval for this worker</li>
-  <li><code>/assess</code> one hour: under, over, or undetermined</li>
-  <li><code>/day?hours=12</code> a shift window, or <code>&amp;from_hour=2026-09-28T09:00</code></li>
-  <li><code>/advise?q=...</code> the agent, in English and Urdu</li>
-</ul>
-<p>A request outside the supported {SUPPORTED_HORIZON_HOURS} hour horizon, or
-against data this service considers stale, returns HTTP 409 and no advice.
-That is intended.</p>
-<p>{ATTRIBUTION}</p>
-"""
+@app.get("/")
+def index() -> FileResponse:
+    """The dashboard. Reads the same endpoints anyone can curl."""
+    return FileResponse(STATIC / "index.html")
 
 
 def main() -> None:

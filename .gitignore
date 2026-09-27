@@ -7,3 +7,6 @@ __pycache__/
 KEY-HANDLING.md
 probes/out/
 video/frames/
+video/raw/
+video/voice/
+.DS_Store

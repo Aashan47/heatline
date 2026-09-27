@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>heatline / Karachi heat exposure</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <b>heatline</b>
+      <span>occupational heat exposure</span>
+    </div>
+    <div class="place">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round">
+        <path d="M12 21s-7-5.6-7-11a7 7 0 1 1 14 0c0 5.4-7 11-7 11z"/>
+        <circle cx="12" cy="10" r="2.6"/>
+      </svg>
+      <span>Karachi</span>
+      <span class="pill" id="freshness"><i></i><span id="fresh-txt">live</span></span>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- left column -->
+    <div style="display:grid; gap:16px; align-content:start">
+
+      <section class="card rise" id="c-verdict">
+        <h2>Right now, for a motorcycle delivery rider</h2>
+        <div class="verdict is-under" id="verdict">
+          <div class="verdict-mark" id="v-mark"></div>
+          <div class="verdict-body">
+            <div class="verdict-word" id="v-word">loading</div>
+            <div class="verdict-sub" id="v-sub">Reading the forecast.</div>
+          </div>
+        </div>
+        <div class="readings">
+          <div class="reading">
+            <div class="lbl">Air temperature</div>
+            <div class="val mono num" id="r-air">--<em>&deg;C</em></div>
+          </div>
+          <div class="reading key">
+            <div class="lbl">Exposure, WBGT</div>
+            <div class="val mono num" id="r-wbgt">--<em>&deg;C</em></div>
+          </div>
+          <div class="reading">
+            <div class="lbl">NIOSH limit</div>
+            <div class="val mono num" id="r-limit">--<em>&deg;C</em></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card rise" id="c-band">
+        <h2>Exposure against the limit, next hours</h2>
+        <div class="band-wrap">
+          <svg class="band-chart" id="chart" viewBox="0 0 860 210"
+               preserveAspectRatio="none" role="img"
+               aria-label="Exposure line crossing into the NIOSH limit band"></svg>
+        </div>
+        <div class="band-legend">
+          <div class="lg"><span class="sw" style="background:var(--data)"></span>
+            Exposure (WBGT)</div>
+          <div class="lg"><span class="sw band"></span>
+            NIOSH limit, 234 to 349 W</div>
+          <div class="lg"><span class="sw"
+            style="background:var(--text-3);height:2px;
+                   background-image:repeating-linear-gradient(90deg,var(--text-3) 0 4px,transparent 4px 8px)"></span>
+            Air temperature</div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- right column -->
+    <div style="display:grid; gap:16px; align-content:start">
+
+      <section class="card rise" id="c-strip">
+        <h2>Hour by hour</h2>
+        <div class="strip" id="strip"></div>
+      </section>
+
+      <section class="card rise" id="c-adv">
+        <h2>Advisory</h2>
+        <div class="advisory">
+          <div class="adv" id="adv-en">
+            <div class="who">English</div>
+            <p id="adv-en-t">Waiting for the agent.</p>
+          </div>
+          <div class="adv ur" id="adv-ur">
+            <div class="who" style="direction:ltr">Urdu</div>
+            <p id="adv-ur-t"></p>
+          </div>
+        </div>
+        <div class="chain" id="chain"></div>
+      </section>
+
+    </div>
+  </div>
+
+  <div class="sources">
+    <div><b>WBGT</b> Liljegren et al. 2008, via ECMWF thermofeel</div>
+    <div><b>Limits</b> NIOSH 2016-106, REL = 56.7 &minus; 11.5 log&#8321;&#8320; M</div>
+    <div><b>Weather</b> Open-Meteo.com, CC BY 4.0</div>
+  </div>
+
+</div>
+
+<script src="/static/app.js"></script>
+<script>
+  if (location.search.includes('demo=1')) {
+    document.head.insertAdjacentHTML('beforeend',
+      '<link rel="stylesheet" href="/static/demo.css">');
+    const t = document.createElement('script');
+    t.src = '/static/demo.js';
+    document.body.appendChild(t);
+  }
+</script>
+</body>
+</html>
