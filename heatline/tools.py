@@ -9,6 +9,7 @@ talked out of a branch.
 
 from __future__ import annotations
 
+import time
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -21,26 +22,60 @@ from .config import (
     SUPPORTED_HORIZON_HOURS,
 )
 from .freshness import check_freshness, check_horizon
-from .ingest import ATTRIBUTION, Forecast, fetch_forecast
+from .ingest import (
+    ATTRIBUTION,
+    CACHE_TTL_SECONDS,
+    Forecast,
+    fetch_forecast,
+)
 from .phrases import URDU_REVIEWED_BY, both
 from .limits import limit_interval
 from .wbgt import wbgt_for_hour
 
 _CACHED: dict[str, Forecast] = {}
+# A forecast handed in by a test is pinned: the expiry below must not reach out
+# to the network and replace the fixture a test just injected.
+_PINNED = False
 
 
 def _forecast(refresh: bool = False) -> Forecast:
-    if refresh or "f" not in _CACHED:
+    """The current forecast, refetched once the one in hand goes stale.
+
+    This memo used to have no expiry: it was filled on the first request and
+    then held for the life of the process. Every test and every recording runs
+    for minutes, so nothing caught it, but the deployed service held a single
+    fetch for **37 hours** and refused every request for 36 of them, because
+    check_freshness will not advise on data older than 90 minutes. The site
+    worked for an hour and a half after each restart and was dead after that.
+
+    Age is measured from when the data was fetched, not from when it was
+    memoised, so serving a copy out of the disk cache cannot extend its life.
+    """
+    held = _CACHED.get("f")
+    if not refresh and held is not None:
+        if _PINNED or time.time() - held.fetched_at < CACHE_TTL_SECONDS:
+            return held
+    try:
         _CACHED["f"] = fetch_forecast()
+    except Exception:  # noqa: BLE001
+        if held is None:
+            raise
+        # Open-Meteo being unreachable is not a reason to return a 500. Keep
+        # the old forecast: check_freshness will refuse on its age, which is
+        # the honest answer and the one this tool is built to give.
+        return held
     return _CACHED["f"]
 
 
 def reset_forecast(forecast: Forecast | None = None) -> None:
     """Test seam: inject a forecast, or clear the cached one."""
+    global _PINNED
     if forecast is None:
         _CACHED.pop("f", None)
+        _PINNED = False
     else:
         _CACHED["f"] = forecast
+        _PINNED = True
 
 
 def current_hour_iso(tz: str = KARACHI_TZ) -> str:
