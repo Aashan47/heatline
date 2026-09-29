@@ -4,6 +4,7 @@
 
 ### Live: https://heat.aashanjaved.com
 ### Demo: https://youtu.be/czvuNjM_gdA (80 seconds, including the part where it declines)
+### Write-up: https://medium.com/@aashanjaved567/the-number-your-weather-app-shows-you-is-not-the-number-that-hurts-you-138bf0b8beb9
 
 Open it on a phone. The verdict, the readings and the hour by hour view need no API key and are not
 rate limited. The agent is capped at five questions an hour per visitor, because each one spends the
