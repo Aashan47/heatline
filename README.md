@@ -3,6 +3,7 @@
 **Is an outdoor worker in Karachi over the occupational heat limit right now?**
 
 ### Live: https://heat.aashanjaved.com
+### Demo: https://youtu.be/czvuNjM_gdA (80 seconds, including the part where it declines)
 
 Open it on a phone. The verdict, the readings and the hour by hour view need no API key and are not
 rate limited. The agent is capped at five questions an hour per visitor, because each one spends the
@@ -108,7 +109,7 @@ curl -i 'http://127.0.0.1:8412/assess'
 ## Tests
 
 ```sh
-python -m pytest tests/ -q      # 46 tests, no network
+python -m pytest tests/ -q      # 83 tests, no network
 ```
 
 Nothing in the suite calls Open-Meteo: a test that depends on live weather cannot fail for the right
